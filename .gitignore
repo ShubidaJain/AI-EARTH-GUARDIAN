@@ -1,5 +1,18 @@
+# Python
 .venv/
 __pycache__/
 *.pyc
+
+# Environment variables
 .env
-.ipynb_checkpoints/
+
+# Raw datasets
+ml/fire/data/raw/
+
+# Model files
+ml/fire/models/*.pkl
+ml/fire/models/*.joblib
+
+# OS
+.DS_Store
+Thumbs.db
