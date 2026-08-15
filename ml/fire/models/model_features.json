@@ -1,0 +1,22 @@
+{
+    "features": [
+        "temperature",
+        "humidity",
+        "wind_speed",
+        "rainfall",
+        "temperature_3d_mean",
+        "temperature_7d_mean",
+        "humidity_3d_mean",
+        "humidity_7d_mean",
+        "wind_3d_mean",
+        "wind_7d_mean",
+        "rainfall_3d_sum",
+        "rainfall_7d_sum",
+        "grid_lat",
+        "grid_lon",
+        "month",
+        "day_of_year"
+    ],
+    "target": "fire_occurred",
+    "threshold": 0.5
+}

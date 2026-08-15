@@ -1,5 +1,6 @@
 import requests
 from pathlib import Path
+from datetime import datetime
 
 import pandas as pd
 
@@ -9,13 +10,14 @@ import pandas as pd
 # ============================================================
 
 START_DATE = "2023-01-01"
-END_DATE = "2023-01-31"
+END_DATE = "2025-12-31"
 
 LAT_MIN = 29
 LAT_MAX = 33
 
 LON_MIN = 73
 LON_MAX = 77
+
 
 OUTPUT_DIR = Path(
     "ml/fire/data/raw/weather"
@@ -27,10 +29,6 @@ OUTPUT_DIR.mkdir(
 )
 
 
-# ============================================================
-# Parameters
-# ============================================================
-
 PARAMETERS = [
     "T2M",
     "RH2M",
@@ -39,10 +37,6 @@ PARAMETERS = [
 ]
 
 
-# ============================================================
-# NASA POWER endpoint
-# ============================================================
-
 BASE_URL = (
     "https://power.larc.nasa.gov/"
     "api/temporal/daily/regional"
@@ -50,28 +44,41 @@ BASE_URL = (
 
 
 # ============================================================
-# Download
+# Download one month
 # ============================================================
 
-for parameter in PARAMETERS:
+def download_month(
+    parameter,
+    start_date,
+    end_date
+):
 
-    print()
-    print("=" * 60)
-    print(f"Downloading: {parameter}")
-    print("=" * 60)
+    start_string = start_date.strftime(
+        "%Y-%m-%d"
+    )
+
+    end_string = end_date.strftime(
+        "%Y-%m-%d"
+    )
+
+    filename = (
+        f"{parameter}_"
+        f"{start_string}_"
+        f"{end_string}.csv"
+    )
 
     output_file = (
-        OUTPUT_DIR /
-        f"{parameter}_{START_DATE}_{END_DATE}.csv"
+        OUTPUT_DIR / filename
     )
+
 
     if output_file.exists():
 
         print(
-            f"Already exists: {output_file}"
+            f"[SKIP] {filename}"
         )
 
-        continue
+        return
 
 
     params = {
@@ -95,14 +102,25 @@ for parameter in PARAMETERS:
             "AG",
 
         "start":
-            START_DATE.replace("-", ""),
+            start_date.strftime("%Y%m%d"),
 
         "end":
-            END_DATE.replace("-", ""),
+            end_date.strftime("%Y%m%d"),
 
         "format":
             "CSV"
     }
+
+
+    print()
+    print("=" * 60)
+
+    print(
+        f"{parameter}: "
+        f"{start_string} → {end_string}"
+    )
+
+    print("=" * 60)
 
 
     response = requests.get(
@@ -112,7 +130,17 @@ for parameter in PARAMETERS:
     )
 
 
-    response.raise_for_status()
+    if response.status_code != 200:
+
+        print(
+            "NASA POWER response:"
+        )
+
+        print(
+            response.text[:1000]
+        )
+
+        response.raise_for_status()
 
 
     with open(
@@ -126,7 +154,7 @@ for parameter in PARAMETERS:
 
 
     print(
-        f"Saved: {output_file}"
+        f"[OK] Saved: {output_file}"
     )
 
     print(
@@ -135,5 +163,53 @@ for parameter in PARAMETERS:
     )
 
 
+# ============================================================
+# Generate monthly periods
+# ============================================================
+
+start = pd.Timestamp(
+    START_DATE
+)
+
+end = pd.Timestamp(
+    END_DATE
+)
+
+
+months = pd.date_range(
+    start=start,
+    end=end,
+    freq="MS"
+)
+
+
+# ============================================================
+# Download
+# ============================================================
+
+for month_start in months:
+
+    month_end = (
+        month_start
+        + pd.offsets.MonthEnd(1)
+    )
+
+    # Don't go beyond requested end date
+    if month_end > end:
+
+        month_end = end
+
+
+    for parameter in PARAMETERS:
+
+        download_month(
+            parameter,
+            month_start,
+            month_end
+        )
+
+
 print()
-print("Weather download complete.")
+print("=" * 60)
+print("ALL WEATHER DOWNLOADS COMPLETE")
+print("=" * 60)
