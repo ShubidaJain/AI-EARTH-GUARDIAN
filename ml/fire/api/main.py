@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-
+from fastapi.middleware.cors import CORSMiddleware
 from .schemas import LocationRequest
 from .predictor import predict_fire_risk
 
@@ -14,17 +14,24 @@ app = FastAPI(
     version="1.0.0"
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ============================================================
 # Health check
 # ============================================================
 
-@app.get("/")
-def root():
+@app.get("/health")
+def health():
 
     return {
-        "status": "online",
-        "service": "AI Earth Guardian",
+        "status": "healthy",
+        "service": "AI Earth Guardian API",
         "model": "XGBoost"
     }
 
