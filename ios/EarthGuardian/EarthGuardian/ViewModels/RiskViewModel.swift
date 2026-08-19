@@ -9,6 +9,11 @@ final class RiskViewModel: ObservableObject {
     @Published var isLoading = false
 
     @Published var errorMessage: String?
+    
+    @Published var gridPredictions:
+        [GridPrediction] = []
+
+    @Published var isLoadingGrid = false
 
     func fetchRisk(
         latitude: Double,
@@ -73,6 +78,50 @@ final class RiskViewModel: ObservableObject {
             isLoading = false
 
             print("🏁 Request finished")
+        }
+    }
+    func fetchGrid(
+        latitude: Double,
+        longitude: Double
+    ) {
+
+        print("🗺️ Starting grid prediction")
+
+        isLoadingGrid = true
+
+        Task {
+
+            do {
+
+                let response =
+                    try await APIService.shared
+                    .predictGrid(
+                        latitude: latitude,
+                        longitude: longitude,
+                        radius: 0.5,
+                        points: 5
+                    )
+
+                print(
+                    "✅ Grid received:",
+                    response.count,
+                    "cells"
+                )
+
+                gridPredictions =
+                    response.results
+
+            } catch {
+
+                print(
+                    "❌ Grid prediction error:",
+                    error
+                )
+            }
+
+            isLoadingGrid = false
+
+            print("🏁 Grid request finished")
         }
     }
 }

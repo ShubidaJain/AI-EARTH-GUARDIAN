@@ -108,26 +108,31 @@ struct ContentView: View {
 
                     } else {
 
-                        Button(
-                            "🔥 Analyze Current Location"
-                        ) {
+                        Button("🔥 Analyze Current Location") {
 
                             guard let location =
-                                locationManager.location
+                                    locationManager.location
                             else {
                                 return
                             }
 
+                            let latitude =
+                                location.coordinate.latitude
+
+                            let longitude =
+                                location.coordinate.longitude
+
                             viewModel.fetchRisk(
-                                latitude:
-                                    location.coordinate.latitude,
-                                longitude:
-                                    location.coordinate.longitude
+                                latitude: latitude,
+                                longitude: longitude
+                            )
+
+                            viewModel.fetchGrid(
+                                latitude: latitude,
+                                longitude: longitude
                             )
                         }
-                        .buttonStyle(
-                            .borderedProminent
-                        )
+                        .buttonStyle(.borderedProminent)
                     }
                 }
                 .padding()
