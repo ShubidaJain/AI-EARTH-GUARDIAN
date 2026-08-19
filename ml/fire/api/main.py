@@ -1,11 +1,13 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from .schemas import LocationRequest
-from .predictor import predict_fire_risk
-
+from .schemas import (
+    LocationRequest,
+    GridRequest
+)
 from .predictor import (
     predict_fire_risk,
-    predict_live_fire_risk
+    predict_live_fire_risk,
+    predict_fire_risk_grid
 )
 
 app = FastAPI(
@@ -60,6 +62,41 @@ def predict_live(
             status_code=404,
             detail=str(error)
         )
+
+    except Exception as error:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(error)
+        )
+# ============================================================
+# Grid Prediction
+# ============================================================
+
+@app.post("/predict/grid")
+def predict_grid(
+    request: GridRequest
+):
+
+    try:
+
+        results = predict_fire_risk_grid(
+            latitude=request.latitude,
+            longitude=request.longitude,
+            radius=request.radius,
+            points=request.points
+        )
+
+        return {
+            "center": {
+                "latitude": request.latitude,
+                "longitude": request.longitude
+            },
+            "radius": request.radius,
+            "points": request.points,
+            "count": len(results),
+            "results": results
+        }
 
     except Exception as error:
 

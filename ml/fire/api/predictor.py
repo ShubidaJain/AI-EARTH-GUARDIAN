@@ -477,3 +477,56 @@ def predict_live_fire_risk(
                 THRESHOLD
         }
     }
+# =======================================================================
+# Prediction of fire risk grid
+# =======================================================================
+def predict_fire_risk_grid(
+    latitude: float,
+    longitude: float,
+    radius: float = 0.5,
+    points: int = 5
+):
+    """
+    Generate fire-risk predictions for a grid
+    surrounding the requested location.
+    """
+
+    results = []
+
+    lat_values = [
+        latitude - radius
+        + (2 * radius * i / (points - 1))
+        for i in range(points)
+    ]
+
+    lon_values = [
+        longitude - radius
+        + (2 * radius * j / (points - 1))
+        for j in range(points)
+    ]
+
+    for grid_latitude in lat_values:
+
+        for grid_longitude in lon_values:
+
+            try:
+
+                prediction = predict_live_fire_risk(
+                    grid_latitude,
+                    grid_longitude
+                )
+
+                results.append(
+                    prediction
+                )
+
+            except Exception as error:
+
+                print(
+                    "Grid prediction failed:",
+                    grid_latitude,
+                    grid_longitude,
+                    error
+                )
+
+    return results
