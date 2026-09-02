@@ -43,9 +43,16 @@ struct ContentView: View {
                         locationManager.location {
 
                         MapView(
-                            location: location
+                            location: location,
+                            gridPredictions: viewModel.gridPredictions
                         )
                         .frame(height: 300)
+                        
+                        if !viewModel.gridPredictions.isEmpty {
+                            GridRiskSummaryView(
+                                predictions: viewModel.gridPredictions
+                            )
+                        }
 
                         Text(
                             "📍 \(location.coordinate.latitude, specifier: "%.4f"), \(location.coordinate.longitude, specifier: "%.4f")"
@@ -75,6 +82,10 @@ struct ContentView: View {
                         ProgressView(
                             "Analyzing fire risk..."
                         )
+                    }
+                    
+                    if viewModel.isLoadingGrid {
+                        ProgressView("Generating risk map...")
                     }
 
 

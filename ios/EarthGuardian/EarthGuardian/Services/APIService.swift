@@ -12,7 +12,7 @@ final class APIService {
     ) async throws -> PredictionResponse {
 
         let urlString =
-            "http://172.25.43.243:8000/predict/live"
+            "http://172.25.43.157:8000/predict/live"
 
         guard let url = URL(string: urlString) else {
             throw URLError(.badURL)
@@ -76,7 +76,7 @@ final class APIService {
     ) async throws -> GridPredictionResponse {
 
         let urlString =
-            "http://172.25.43.243:8000/predict/grid"
+            "http://172.25.43.157:8000/predict/grid"
 
         guard let url = URL(string: urlString) else {
             throw URLError(.badURL)

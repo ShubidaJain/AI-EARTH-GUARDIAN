@@ -101,33 +101,20 @@ struct GridCenter: Codable {
 
 
 struct GridPrediction: Codable, Identifiable {
-
+    
+    let location: LocationInfo
+    let weather: WeatherInfo
+    let historicalWeather: HistoricalWeather
+    let prediction: PredictionInfo
+    
     var id: String {
-        "\(latitude)-\(longitude)"
+        "\(location.latitude)-\(location.longitude)"
     }
-
-    let latitude: Double
-    let longitude: Double
-
-    let gridLat: Double?
-    let gridLon: Double?
-
-    let fireProbability: Double
-    let firePrediction: Int
-    let riskLevel: String
-    let threshold: Double
-
+    
     enum CodingKeys: String, CodingKey {
-
-        case latitude
-        case longitude
-
-        case gridLat = "grid_lat"
-        case gridLon = "grid_lon"
-
-        case fireProbability = "fire_probability"
-        case firePrediction = "fire_prediction"
-        case riskLevel = "risk_level"
-        case threshold
+        case location
+        case weather
+        case historicalWeather = "historical_weather"
+        case prediction
     }
 }
