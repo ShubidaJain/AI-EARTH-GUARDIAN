@@ -14,6 +14,9 @@ final class RiskViewModel: ObservableObject {
         [GridPrediction] = []
 
     @Published var isLoadingGrid = false
+    
+    @Published var gridRadius: Double = 0.5
+    @Published var gridPoints: Int = 5
 
     func fetchRisk(
         latitude: Double,
@@ -108,8 +111,9 @@ final class RiskViewModel: ObservableObject {
                     "cells"
                 )
 
-                gridPredictions =
-                    response.results
+                gridPredictions = response.results
+                gridRadius = response.radius
+                gridPoints = response.points
 
             } catch {
 

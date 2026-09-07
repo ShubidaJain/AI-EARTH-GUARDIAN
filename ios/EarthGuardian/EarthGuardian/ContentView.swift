@@ -44,7 +44,9 @@ struct ContentView: View {
 
                         MapView(
                             location: location,
-                            gridPredictions: viewModel.gridPredictions
+                            gridPredictions: viewModel.gridPredictions,
+                            gridRadius: viewModel.gridRadius,
+                            gridPoints: viewModel.gridPoints
                         )
                         .frame(height: 300)
                         

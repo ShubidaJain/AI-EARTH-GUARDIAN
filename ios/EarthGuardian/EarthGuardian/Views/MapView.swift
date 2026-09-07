@@ -6,15 +6,22 @@ struct MapView: View {
     
     let location: CLLocation
     let gridPredictions: [GridPrediction]
+    let gridRadius: Double
+    let gridPoints: Int
     
     @State private var position: MapCameraPosition
+    @State private var selectedPrediction: GridPrediction?
     
     init(
         location: CLLocation,
-        gridPredictions: [GridPrediction] = []
+        gridPredictions: [GridPrediction] = [],
+        gridRadius: Double = 0.5,
+        gridPoints: Int = 5
     ) {
         self.location = location
         self.gridPredictions = gridPredictions
+        self.gridRadius = gridRadius
+        self.gridPoints = gridPoints
         
         let region = MKCoordinateRegion(
             center: location.coordinate,
@@ -23,6 +30,43 @@ struct MapView: View {
         )
         
         _position = State(initialValue: .region(region))
+    }
+    
+    // cell size calculation
+    
+    private var cellSize: Double {
+        guard gridPoints > 1 else {
+            return 0
+        }
+        
+        return (2 * gridRadius) / Double(gridPoints - 1)
+    }
+
+    private var halfCell: Double {
+        cellSize / 2
+    }
+    
+    private func riskColor(
+        for riskLevel: String
+    ) -> Color {
+
+        switch riskLevel.uppercased() {
+
+        case "LOW":
+            return .green
+
+        case "MODERATE":
+            return .yellow
+
+        case "HIGH":
+            return .orange
+
+        case "EXTREME":
+            return .red
+
+        default:
+            return .gray
+        }
     }
     
     var body: some View {
@@ -50,6 +94,48 @@ struct MapView: View {
                 // MARK: Risk Grid
                 
                 ForEach(gridPredictions) { prediction in
+
+                    let latitude = prediction.location.latitude
+                    let longitude = prediction.location.longitude
+
+                    let half = halfCell
+
+                    let coordinates = [
+                        CLLocationCoordinate2D(
+                            latitude: latitude + half,
+                            longitude: longitude - half
+                        ),
+                        CLLocationCoordinate2D(
+                            latitude: latitude + half,
+                            longitude: longitude + half
+                        ),
+                        CLLocationCoordinate2D(
+                            latitude: latitude - half,
+                            longitude: longitude + half
+                        ),
+                        CLLocationCoordinate2D(
+                            latitude: latitude - half,
+                            longitude: longitude - half
+                        )
+                    ]
+
+                    MapPolygon(coordinates: coordinates)
+                        .foregroundStyle(
+                            riskColor(
+                                for: prediction.prediction.riskLevel
+                            )
+                            .opacity(0.28)
+                        )
+                        .stroke(
+                            riskColor(
+                                for: prediction.prediction.riskLevel
+                            )
+                            .opacity(0.55),
+                            lineWidth: 1
+                        )
+                }
+                
+                ForEach(gridPredictions) { prediction in
                     
                     Annotation(
                         prediction.prediction.riskLevel,
@@ -62,6 +148,9 @@ struct MapView: View {
                             riskLevel: prediction.prediction.riskLevel,
                             probability: prediction.prediction.fireProbability
                         )
+                        .onTapGesture {
+                            selectedPrediction = prediction
+                        }
                     }
                 }
             }
@@ -73,6 +162,9 @@ struct MapView: View {
             
             RiskLegend()
                 .padding(12)
+            .sheet(item: $selectedPrediction) { prediction in
+                RiskDetailView(prediction: prediction)
+            }
         }
     }
 }
@@ -108,22 +200,22 @@ struct RiskMapMarker: View {
         ZStack {
             
             // Risk area
-            Circle()
-                .fill(markerColor.opacity(0.25))
-                .frame(width: 50, height: 50)
+//            Circle()
+//                .fill(markerColor.opacity(0.25))
+//                .frame(width: 50, height: 50)
             
             // Main marker
             Circle()
                 .fill(markerColor.opacity(0.9))
-                .frame(width: 28, height: 28)
+                .frame(width: 20, height: 20)
             
             Circle()
                 .stroke(.white, lineWidth: 2)
-                .frame(width: 28, height: 28)
+                .frame(width: 20, height: 20)
             
             Circle()
                 .fill(.white)
-                .frame(width: 7, height: 7)
+                .frame(width: 5, height: 5)
         }
     }
 }
