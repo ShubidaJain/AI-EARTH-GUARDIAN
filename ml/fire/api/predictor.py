@@ -1,5 +1,7 @@
 from pathlib import Path
 import json
+import asyncio
+import time
 
 import pandas as pd
 from xgboost import XGBClassifier
@@ -8,6 +10,8 @@ from .weather_service import (
     get_current_weather,
     extract_weather_features
 )
+
+from .config import GRID_CACHE_TTL
 
 # ============================================================
 # Paths
@@ -477,21 +481,73 @@ def predict_live_fire_risk(
                 THRESHOLD
         }
     }
+
+# ============================================================
+# GRID CACHE
+# ============================================================
+
+_grid_cache = {}
+
+def clear_grid_cache():
+    """
+    Clear all cached grid predictions.
+    """
+    _grid_cache.clear()
+
+
+def get_grid_cache_info():
+    """
+    Return basic grid cache information.
+    """
+    return {
+        "entries": len(_grid_cache),
+        "ttl_seconds": GRID_CACHE_TTL
+    }
+
 # =======================================================================
 # Prediction of fire risk grid
 # =======================================================================
-def predict_fire_risk_grid(
+async def predict_fire_risk_grid(
     latitude: float,
     longitude: float,
     radius: float = 0.5,
     points: int = 5
 ):
-    """
-    Generate fire-risk predictions for a grid
-    surrounding the requested location.
-    """
+        # --------------------------------------------------------
+    # Create cache key
+    # --------------------------------------------------------
 
-    results = []
+    cache_key = (
+        round(latitude, 3),
+        round(longitude, 3),
+        round(radius, 3),
+        points
+    )
+
+    current_time = time.time()
+
+    # --------------------------------------------------------
+    # Check grid cache
+    # --------------------------------------------------------
+
+    if cache_key in _grid_cache:
+
+        cached_results, cached_time = _grid_cache[cache_key]
+
+        if current_time - cached_time < GRID_CACHE_TTL:
+
+            print("🗺️ Grid cache HIT:", cache_key)
+
+            return cached_results
+
+        # Cache expired
+        del _grid_cache[cache_key]
+
+    print("🗺️ Grid cache MISS:", cache_key)
+
+    # --------------------------------------------------------
+    # Generate grid coordinates
+    # --------------------------------------------------------
 
     lat_values = [
         latitude - radius
@@ -505,28 +561,68 @@ def predict_fire_risk_grid(
         for j in range(points)
     ]
 
-    for grid_latitude in lat_values:
+    coordinates = [
+        (grid_latitude, grid_longitude)
+        for grid_latitude in lat_values
+        for grid_longitude in lon_values
+    ]
 
-        for grid_longitude in lon_values:
+    # --------------------------------------------------------
+    # Predict one grid point
+    # --------------------------------------------------------
 
-            try:
+    async def predict_one(lat, lon):
 
-                prediction = predict_live_fire_risk(
-                    grid_latitude,
-                    grid_longitude
-                )
+        try:
 
-                results.append(
-                    prediction
-                )
+            return await asyncio.to_thread(
+                predict_live_fire_risk,
+                lat,
+                lon
+            )
 
-            except Exception as error:
+        except Exception as error:
 
-                print(
-                    "Grid prediction failed:",
-                    grid_latitude,
-                    grid_longitude,
-                    error
-                )
+            print(
+                "Grid prediction failed:",
+                lat,
+                lon,
+                error
+            )
+
+            return None
+
+    # --------------------------------------------------------
+    # Run predictions concurrently
+    # --------------------------------------------------------
+
+    results = await asyncio.gather(
+        *[
+            predict_one(lat, lon)
+            for lat, lon in coordinates
+        ]
+    )
+
+    results = [
+        result
+        for result in results
+        if result is not None
+    ]
+
+    # --------------------------------------------------------
+    # Store complete grid in cache
+    # --------------------------------------------------------
+
+    _grid_cache[cache_key] = (
+        results,
+        current_time
+    )
+
+    print(
+        "🗺️ Grid cached:",
+        cache_key,
+        "cells:",
+        len(results)
+    )
 
     return results

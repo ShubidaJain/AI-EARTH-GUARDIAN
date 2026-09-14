@@ -1,8 +1,19 @@
+import time 
 import requests
 import pandas as pd
 
+from .config import (
+    WEATHER_CACHE_TTL,
+    WEATHER_REQUEST_TIMEOUT
+)
 
 BASE_URL = "https://api.open-meteo.com/v1/forecast"
+
+# ============================================================
+# WEATHER CACHE
+# ============================================================
+
+_weather_cache = {}
 
 
 def get_current_weather(
@@ -13,6 +24,28 @@ def get_current_weather(
     Get current weather plus the previous 7 days
     of hourly weather data.
     """
+
+    # Round coordinates for cache consistency
+    cache_key = (
+        round(latitude, 3),
+        round(longitude, 3)
+    )
+
+    current_time = time.time()
+
+    # Check cache
+    if cache_key in _weather_cache:
+
+        cached_data, cached_time = _weather_cache[cache_key]
+
+        if current_time - cached_time < CACHE_TTL:
+            print("🌦️ Weather cache HIT:", cache_key)
+            return cached_data
+
+        # Cache expired
+        del _weather_cache[cache_key]
+
+    print("🌐 Weather API request:", cache_key)
 
     params = {
         "latitude": latitude,
@@ -48,12 +81,17 @@ def get_current_weather(
     response = requests.get(
         BASE_URL,
         params=params,
-        timeout=30
+        timeout=WEATHER_REQUEST_TIMEOUT
     )
 
     response.raise_for_status()
 
-    return response.json()
+    data = response.json()
+
+    # Cache the response
+    _weather_cache[cache_key] = (data, time.time())
+
+    return data
 
 
 def extract_weather_features(
@@ -307,4 +345,19 @@ def extract_weather_features(
 
         "day_of_year":
             day_of_year
+    }
+def clear_weather_cache():
+    """
+    Clear all cached weather responses.
+    """
+    _weather_cache.clear()
+
+
+def get_weather_cache_info():
+    """
+    Return basic weather cache information.
+    """
+    return {
+        "entries": len(_weather_cache),
+        "ttl_seconds": WEATHER_CACHE_TTL
     }
