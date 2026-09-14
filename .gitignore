@@ -16,3 +16,10 @@ ml/fire/models/*.joblib
 # OS
 .DS_Store
 Thumbs.db
+# Xcode
+ios/**/xcuserdata/
+ios/**/DerivedData/
+ios/**/*.xcuserstate
+
+# macOS
+.DS_Store
